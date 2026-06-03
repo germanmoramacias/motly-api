@@ -1,0 +1,51 @@
+[project]
+name = "motly-api"
+version = "0.1.0"
+description = "Async FastAPI backend for an AI-powered English learning app."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.13.3",
+    "asyncpg>=0.30.0",
+    "bcrypt>=4.2.0",
+    "email-validator>=2.2.0",
+    "fastapi>=0.115.0",
+    "greenlet>=3.1.1",
+    "httpx>=0.27.2",
+    "openai>=1.52.0",
+    "pydantic>=2.9.2",
+    "pydantic-settings>=2.6.0",
+    "pyjwt[crypto]>=2.9.0",
+    "python-json-logger>=2.0.7",
+    "sqlalchemy>=2.0.35",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["alembic*"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
