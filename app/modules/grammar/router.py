@@ -9,10 +9,11 @@ from app.db.session import get_db_session
 from app.modules.ai.router import get_openai_service
 from app.modules.ai.service import OpenAIService
 from app.modules.grammar.repository import GrammarRepository
-from app.modules.grammar.schemas import GrammarExtractionResponse, GrammarTopicRead
+from app.modules.grammar.schemas import GrammarExtractionResponse, GrammarTopicCreate, GrammarTopicRead
 from app.modules.grammar.service import GrammarService
 from app.modules.notes.router import get_current_db_user_id, get_lesson_service
 from app.modules.notes.service import LessonService
+from app.utils.pagination import PaginationParams
 
 router = APIRouter()
 
@@ -23,6 +24,26 @@ def get_grammar_service(
     ai: OpenAIService = Depends(get_openai_service),
 ) -> GrammarService:
     return GrammarService(GrammarRepository(session), lessons, ai)
+
+
+@router.get("", response_model=list[GrammarTopicRead])
+async def list_grammar_topics(
+    pagination: PaginationParams = Depends(),
+    user_id: UUID = Depends(get_current_db_user_id),
+    service: GrammarService = Depends(get_grammar_service),
+) -> list[GrammarTopicRead]:
+    items = await service.list_for_user(user_id=user_id, limit=pagination.limit, offset=pagination.offset)
+    return [GrammarTopicRead.model_validate(item) for item in items]
+
+
+@router.post("", response_model=GrammarTopicRead, status_code=status.HTTP_201_CREATED)
+async def create_grammar_topic(
+    payload: GrammarTopicCreate,
+    user_id: UUID = Depends(get_current_db_user_id),
+    service: GrammarService = Depends(get_grammar_service),
+) -> GrammarTopicRead:
+    item = await service.create_topic(user_id=user_id, payload=payload)
+    return GrammarTopicRead.model_validate(item)
 
 
 @router.get("/lessons/{lesson_id}", response_model=list[GrammarTopicRead])

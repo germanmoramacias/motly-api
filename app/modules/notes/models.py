@@ -20,12 +20,6 @@ class Lesson(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     source_language: Mapped[str] = mapped_column(String(16), default="en", nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="lessons")
-    vocabulary_items: Mapped[list["Vocabulary"]] = relationship(
-        back_populates="lesson", cascade="all, delete-orphan"
-    )
-    expressions: Mapped[list["Expression"]] = relationship(
-        back_populates="lesson", cascade="all, delete-orphan"
-    )
-    grammar_topics: Mapped[list["GrammarTopic"]] = relationship(
-        back_populates="lesson", cascade="all, delete-orphan"
-    )
+    vocabulary_items: Mapped[list["Vocabulary"]] = relationship(back_populates="lesson")
+    expressions: Mapped[list["Expression"]] = relationship(back_populates="lesson")
+    grammar_topics: Mapped[list["GrammarTopic"]] = relationship(back_populates="lesson")

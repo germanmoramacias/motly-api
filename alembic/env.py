@@ -16,7 +16,6 @@ from app.modules.grammar.models import GrammarTopic
 from app.modules.notes.models import Lesson
 from app.modules.users.models import User
 from app.modules.vocabulary.models import Vocabulary
-from app.modules.writing.models import WritingError, WritingSubmission
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

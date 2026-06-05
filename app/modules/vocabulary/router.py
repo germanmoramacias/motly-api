@@ -11,8 +11,9 @@ from app.modules.ai.service import OpenAIService
 from app.modules.notes.router import get_current_db_user_id, get_lesson_service
 from app.modules.notes.service import LessonService
 from app.modules.vocabulary.repository import VocabularyRepository
-from app.modules.vocabulary.schemas import VocabularyExtractionResponse, VocabularyRead
+from app.modules.vocabulary.schemas import VocabularyCreate, VocabularyExtractionResponse, VocabularyRead
 from app.modules.vocabulary.service import VocabularyService
+from app.utils.pagination import PaginationParams
 
 router = APIRouter()
 
@@ -23,6 +24,26 @@ def get_vocabulary_service(
     ai: OpenAIService = Depends(get_openai_service),
 ) -> VocabularyService:
     return VocabularyService(VocabularyRepository(session), lessons, ai)
+
+
+@router.get("", response_model=list[VocabularyRead])
+async def list_vocabulary(
+    pagination: PaginationParams = Depends(),
+    user_id: UUID = Depends(get_current_db_user_id),
+    service: VocabularyService = Depends(get_vocabulary_service),
+) -> list[VocabularyRead]:
+    items = await service.list_for_user(user_id=user_id, limit=pagination.limit, offset=pagination.offset)
+    return [VocabularyRead.model_validate(item) for item in items]
+
+
+@router.post("", response_model=VocabularyRead, status_code=status.HTTP_201_CREATED)
+async def create_vocabulary_item(
+    payload: VocabularyCreate,
+    user_id: UUID = Depends(get_current_db_user_id),
+    service: VocabularyService = Depends(get_vocabulary_service),
+) -> VocabularyRead:
+    item = await service.create_item(user_id=user_id, payload=payload)
+    return VocabularyRead.model_validate(item)
 
 
 @router.get("/lessons/{lesson_id}", response_model=list[VocabularyRead])

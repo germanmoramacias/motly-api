@@ -16,3 +16,12 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     lessons: Mapped[list["Lesson"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    vocabulary_items: Mapped[list["Vocabulary"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    expressions: Mapped[list["Expression"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    grammar_topics: Mapped[list["GrammarTopic"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )

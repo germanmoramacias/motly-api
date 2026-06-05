@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.users.models import User
@@ -25,7 +26,11 @@ class UserRepository:
     async def create(self, payload: UserCreate) -> User:
         user = User(**payload.model_dump())
         self.session.add(user)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            await self.session.rollback()
+            raise
         await self.session.refresh(user)
         return user
 

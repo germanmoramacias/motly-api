@@ -40,28 +40,19 @@ class AnalyticsRepository:
 
     async def count_vocabulary(self, user_id: UUID) -> int:
         result = await self.session.execute(
-            select(func.count())
-            .select_from(Vocabulary)
-            .join(Lesson, Lesson.id == Vocabulary.lesson_id)
-            .where(Lesson.user_id == user_id)
+            select(func.count()).select_from(Vocabulary).where(Vocabulary.user_id == user_id)
         )
         return int(result.scalar_one())
 
     async def count_expressions(self, user_id: UUID) -> int:
         result = await self.session.execute(
-            select(func.count())
-            .select_from(Expression)
-            .join(Lesson, Lesson.id == Expression.lesson_id)
-            .where(Lesson.user_id == user_id)
+            select(func.count()).select_from(Expression).where(Expression.user_id == user_id)
         )
         return int(result.scalar_one())
 
     async def count_grammar_topics(self, user_id: UUID) -> int:
         result = await self.session.execute(
-            select(func.count())
-            .select_from(GrammarTopic)
-            .join(Lesson, Lesson.id == GrammarTopic.lesson_id)
-            .where(Lesson.user_id == user_id)
+            select(func.count()).select_from(GrammarTopic).where(GrammarTopic.user_id == user_id)
         )
         return int(result.scalar_one())
 

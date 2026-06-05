@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.errors import NotFoundError
 from app.modules.users.models import User
 from app.modules.users.repository import UserRepository
@@ -31,7 +33,13 @@ class UserService:
             email=email,
             full_name=full_name if isinstance(full_name, str) else None,
         )
-        return await self.repository.create(payload)
+        try:
+            return await self.repository.create(payload)
+        except IntegrityError:
+            user = await self.repository.get_by_supabase_id(claims.sub)
+            if user is None:
+                raise
+            return user
 
     async def update_user(self, user_id: UUID, payload: UserUpdate) -> User:
         user = await self.get_user(user_id)

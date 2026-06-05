@@ -92,42 +92,8 @@ def upgrade() -> None:
     )
     op.create_index("ix_quiz_results_user_id", "quiz_results", ["user_id"])
 
-    op.create_table(
-        "writing_submissions",
-        sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("prompt", sa.Text(), nullable=True),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("corrected_content", sa.Text(), nullable=True),
-        sa.Column("feedback", sa.Text(), nullable=True),
-        sa.Column("score", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
-    op.create_index("ix_writing_submissions_user_id", "writing_submissions", ["user_id"])
-
-    op.create_table(
-        "writing_errors",
-        sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column(
-            "submission_id",
-            sa.Uuid(),
-            sa.ForeignKey("writing_submissions.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
-        sa.Column("error_text", sa.String(length=240), nullable=False),
-        sa.Column("correction", sa.String(length=240), nullable=False),
-        sa.Column("explanation", sa.Text(), nullable=False),
-        sa.Column("category", sa.String(length=80), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
-    op.create_index("ix_writing_errors_submission_id", "writing_errors", ["submission_id"])
-
 
 def downgrade() -> None:
-    op.drop_table("writing_errors")
-    op.drop_table("writing_submissions")
     op.drop_table("quiz_results")
     op.drop_table("grammar_topics")
     op.drop_table("expressions")

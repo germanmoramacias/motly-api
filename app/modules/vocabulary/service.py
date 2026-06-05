@@ -20,12 +20,20 @@ class VocabularyService:
         self.lessons = lessons
         self.ai = ai
 
+    async def list_for_user(self, user_id: UUID, limit: int, offset: int) -> list[Vocabulary]:
+        return await self.repository.list_by_user(user_id=user_id, limit=limit, offset=offset)
+
     async def list_for_lesson(self, lesson_id: UUID, user_id: UUID) -> list[Vocabulary]:
         await self.lessons.get_lesson(lesson_id=lesson_id, user_id=user_id)
-        return await self.repository.list_by_lesson(lesson_id)
+        return await self.repository.list_by_lesson(lesson_id=lesson_id, user_id=user_id)
+
+    async def create_item(self, user_id: UUID, payload: VocabularyCreate) -> Vocabulary:
+        if payload.lesson_id is not None:
+            await self.lessons.get_lesson(lesson_id=payload.lesson_id, user_id=user_id)
+        return await self.repository.create(user_id=user_id, payload=payload)
 
     async def extract_for_lesson(self, lesson_id: UUID, user_id: UUID) -> list[Vocabulary]:
         lesson = await self.lessons.get_lesson(lesson_id=lesson_id, user_id=user_id)
         extracted = await self.ai.extract_vocabulary(lesson.content)
         payload = [VocabularyCreate.model_validate(item.model_dump()) for item in extracted]
-        return await self.repository.create_many(lesson_id=lesson.id, items=payload)
+        return await self.repository.create_many(user_id=user_id, lesson_id=lesson.id, items=payload)

@@ -6,7 +6,6 @@ from typing import cast
 
 import httpx
 import jwt
-from jwt import PyJWKClient, PyJWKClientError
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
@@ -52,15 +51,24 @@ async def _load_jwks() -> dict[str, object]:
 
 async def verify_supabase_jwt(token: str) -> SupabaseJWTClaims:
     jwks = await _load_jwks()
-    jwk_client = PyJWKClient("")
-    jwk_client.fetch_data = lambda: jwks
 
     try:
-        signing_key = jwk_client.get_signing_key_from_jwt(token).key
-    except PyJWKClientError as exc:
-        raise UnauthorizedError("Invalid token signing key") from exc
+        header = jwt.get_unverified_header(token)
+    except jwt.PyJWTError as exc:
+        raise UnauthorizedError("Invalid token header") from exc
+
+    algorithm = header.get("alg")
+    if algorithm not in {"RS256", "ES256"}:
+        raise UnauthorizedError(f"Unsupported token algorithm: {algorithm}")
+
+    key_id = header.get("kid")
+    keys = cast(list[dict[str, object]], jwks.get("keys", []))
+    jwk_data = next((key for key in keys if key.get("kid") == key_id), None)
+    if jwk_data is None:
+        raise UnauthorizedError("Invalid token signing key")
 
     try:
+        signing_key = jwt.PyJWK.from_dict(jwk_data).key
         payload = jwt.decode(
             token,
             signing_key,
