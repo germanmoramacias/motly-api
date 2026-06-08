@@ -12,7 +12,6 @@ class VocabularyCreate(AppBaseModel):
     term: str = Field(min_length=1, max_length=120)
     definition: str = Field(min_length=1)
     example: str | None = None
-    difficulty: str | None = Field(default=None, max_length=32)
 
 
 class VocabularyRead(EntitySchema):
@@ -21,7 +20,6 @@ class VocabularyRead(EntitySchema):
     term: str
     definition: str
     example: str | None
-    difficulty: str | None
 
 
 class VocabularyExtractionRequest(AppBaseModel):

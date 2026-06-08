@@ -22,7 +22,6 @@ class VocabularyExtractionItem(AppBaseModel):
     term: str
     definition: str
     example: str | None = None
-    difficulty: str | None = None
 
 
 class GrammarExtractionItem(AppBaseModel):
@@ -33,6 +32,8 @@ class GrammarExtractionItem(AppBaseModel):
 
 class ExpressionExtractionItem(AppBaseModel):
     text: str
+    keyword: str | None = None
+    group: str | None = None
     meaning: str
     example: str | None = None
 

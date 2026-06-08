@@ -19,6 +19,8 @@ class Expression(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="SET NULL"), index=True
     )
     text: Mapped[str] = mapped_column(String(180), nullable=False)
+    keyword: Mapped[str | None] = mapped_column(String(120))
+    group: Mapped[str | None] = mapped_column("group", String(80))
     meaning: Mapped[str] = mapped_column(Text, nullable=False)
     example: Mapped[str | None] = mapped_column(Text)
 

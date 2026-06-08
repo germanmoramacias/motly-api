@@ -64,7 +64,7 @@ class OpenAIService:
         payload = await self._json_task(
             instruction=(
                 "Extract idioms, collocations, and natural expressions. Return JSON with key 'items'. "
-                "Each item has text, meaning, example."
+                "Each item has text, keyword, group, meaning, example."
             ),
             text=text,
         )
