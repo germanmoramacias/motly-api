@@ -6,30 +6,34 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.vocabulary.models import Vocabulary
-from app.modules.vocabulary.schemas import VocabularyCreate
+from app.modules.vocabulary.schemas import VocabularyCreate, VocabularyUpdate
 
 
 class VocabularyRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def list_by_user(self, user_id: UUID, limit: int, offset: int) -> list[Vocabulary]:
+    async def list_by_user(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+        lesson_id: UUID | None = None,
+    ) -> list[Vocabulary]:
+        query = select(Vocabulary).where(Vocabulary.user_id == user_id)
+        if lesson_id is not None:
+            query = query.where(Vocabulary.lesson_id == lesson_id)
+
         result = await self.session.execute(
-            select(Vocabulary)
-            .where(Vocabulary.user_id == user_id)
-            .order_by(Vocabulary.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            query.order_by(Vocabulary.created_at.desc()).limit(limit).offset(offset)
         )
         return list(result.scalars().all())
 
-    async def list_by_lesson(self, lesson_id: UUID, user_id: UUID) -> list[Vocabulary]:
+    async def get_for_user(self, item_id: UUID, user_id: UUID) -> Vocabulary | None:
         result = await self.session.execute(
-            select(Vocabulary)
-            .where(Vocabulary.lesson_id == lesson_id, Vocabulary.user_id == user_id)
-            .order_by(Vocabulary.term.asc())
+            select(Vocabulary).where(Vocabulary.id == item_id, Vocabulary.user_id == user_id)
         )
-        return list(result.scalars().all())
+        return result.scalar_one_or_none()
 
     async def create(self, user_id: UUID, payload: VocabularyCreate) -> Vocabulary:
         row = Vocabulary(user_id=user_id, **payload.model_dump())
@@ -57,3 +61,14 @@ class VocabularyRepository:
         for row in rows:
             await self.session.refresh(row)
         return rows
+
+    async def update(self, item: Vocabulary, payload: VocabularyUpdate) -> Vocabulary:
+        for key, value in payload.model_dump(exclude_unset=True).items():
+            setattr(item, key, value)
+        await self.session.commit()
+        await self.session.refresh(item)
+        return item
+
+    async def delete(self, item: Vocabulary) -> None:
+        await self.session.delete(item)
+        await self.session.commit()

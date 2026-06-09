@@ -100,9 +100,13 @@ The middleware validates the JWT against Supabase JWKS and exposes the claims in
 - `GET /api/v1/notes/{lesson_id}`
 - `PATCH /api/v1/notes/{lesson_id}`
 - `DELETE /api/v1/notes/{lesson_id}`
-- `POST /api/v1/vocabulary/lessons/{lesson_id}/extract`
+- `GET /api/v1/vocabulary`
+- `POST /api/v1/vocabulary`
+- `GET /api/v1/vocabulary?lesson_id={lesson_id}`
 - `POST /api/v1/grammar/lessons/{lesson_id}/extract`
-- `POST /api/v1/expressions/lessons/{lesson_id}/extract`
+- `GET /api/v1/expressions`
+- `POST /api/v1/expressions`
+- `GET /api/v1/expressions?lesson_id={lesson_id}`
 - `POST /api/v1/quiz/generate`
 - `POST /api/v1/writing/submissions`
 - `POST /api/v1/ai/tutor-chat`

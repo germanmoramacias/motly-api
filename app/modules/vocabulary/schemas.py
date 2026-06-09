@@ -14,17 +14,16 @@ class VocabularyCreate(AppBaseModel):
     example: str | None = None
 
 
+class VocabularyUpdate(AppBaseModel):
+    lesson_id: UUID | None = None
+    term: str | None = Field(default=None, min_length=1, max_length=120)
+    definition: str | None = Field(default=None, min_length=1)
+    example: str | None = None
+
+
 class VocabularyRead(EntitySchema):
     user_id: UUID
     lesson_id: UUID | None
     term: str
     definition: str
     example: str | None
-
-
-class VocabularyExtractionRequest(AppBaseModel):
-    lesson_id: UUID
-
-
-class VocabularyExtractionResponse(AppBaseModel):
-    items: list[VocabularyRead]

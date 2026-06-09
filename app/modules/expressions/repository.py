@@ -6,30 +6,34 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.expressions.models import Expression
-from app.modules.expressions.schemas import ExpressionCreate
+from app.modules.expressions.schemas import ExpressionCreate, ExpressionUpdate
 
 
 class ExpressionRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def list_by_user(self, user_id: UUID, limit: int, offset: int) -> list[Expression]:
+    async def list_by_user(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+        lesson_id: UUID | None = None,
+    ) -> list[Expression]:
+        query = select(Expression).where(Expression.user_id == user_id)
+        if lesson_id is not None:
+            query = query.where(Expression.lesson_id == lesson_id)
+
         result = await self.session.execute(
-            select(Expression)
-            .where(Expression.user_id == user_id)
-            .order_by(Expression.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            query.order_by(Expression.created_at.desc()).limit(limit).offset(offset)
         )
         return list(result.scalars().all())
 
-    async def list_by_lesson(self, lesson_id: UUID, user_id: UUID) -> list[Expression]:
+    async def get_for_user(self, item_id: UUID, user_id: UUID) -> Expression | None:
         result = await self.session.execute(
-            select(Expression)
-            .where(Expression.lesson_id == lesson_id, Expression.user_id == user_id)
-            .order_by(Expression.text.asc())
+            select(Expression).where(Expression.id == item_id, Expression.user_id == user_id)
         )
-        return list(result.scalars().all())
+        return result.scalar_one_or_none()
 
     async def create(self, user_id: UUID, payload: ExpressionCreate) -> Expression:
         row = Expression(user_id=user_id, **payload.model_dump())
@@ -57,3 +61,14 @@ class ExpressionRepository:
         for row in rows:
             await self.session.refresh(row)
         return rows
+
+    async def update(self, item: Expression, payload: ExpressionUpdate) -> Expression:
+        for key, value in payload.model_dump(exclude_unset=True).items():
+            setattr(item, key, value)
+        await self.session.commit()
+        await self.session.refresh(item)
+        return item
+
+    async def delete(self, item: Expression) -> None:
+        await self.session.delete(item)
+        await self.session.commit()
