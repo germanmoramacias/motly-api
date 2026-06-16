@@ -14,8 +14,8 @@ def get_openai_service() -> OpenAIService:
     return OpenAIService()
 
 
-@router.post("/tutor-chat", response_model=TutorChatResponse)
-async def tutor_chat(
+@router.post("/chat", response_model=TutorChatResponse)
+async def chat(
     payload: TutorChatRequest,
     _: SupabaseJWTClaims = Depends(get_current_claims),
     service: OpenAIService = Depends(get_openai_service),

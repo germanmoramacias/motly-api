@@ -9,18 +9,21 @@ from app.shared.schemas import AppBaseModel, EntitySchema
 
 class GrammarTopicCreate(AppBaseModel):
     lesson_id: UUID | None = None
-    name: str = Field(min_length=1, max_length=160)
-    explanation: str = Field(min_length=1)
-    examples: list[str] = Field(default_factory=list)
+    title: str = Field(min_length=1, max_length=180)
+    content: str = Field(min_length=1)
+    source_language: str = Field(default="en", min_length=2, max_length=16)
+
+
+class GrammarTopicUpdate(AppBaseModel):
+    lesson_id: UUID | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=180)
+    content: str | None = Field(default=None, min_length=1)
+    source_language: str | None = Field(default=None, min_length=2, max_length=16)
 
 
 class GrammarTopicRead(EntitySchema):
     user_id: UUID
     lesson_id: UUID | None
-    name: str
-    explanation: str
-    examples: list[str]
-
-
-class GrammarExtractionResponse(AppBaseModel):
-    items: list[GrammarTopicRead]
+    title: str
+    content: str
+    source_language: str

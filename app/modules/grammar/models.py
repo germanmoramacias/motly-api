@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import JSON, ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,9 +18,9 @@ class GrammarTopic(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     lesson_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="SET NULL"), index=True
     )
-    name: Mapped[str] = mapped_column(String(160), nullable=False)
-    explanation: Mapped[str] = mapped_column(Text, nullable=False)
-    examples: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    source_language: Mapped[str] = mapped_column(String(16), default="en", nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="grammar_topics")
     lesson: Mapped["Lesson"] = relationship(back_populates="grammar_topics")

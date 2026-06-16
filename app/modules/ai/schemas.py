@@ -25,9 +25,9 @@ class VocabularyExtractionItem(AppBaseModel):
 
 
 class GrammarExtractionItem(AppBaseModel):
-    name: str
-    explanation: str
-    examples: list[str] = Field(default_factory=list)
+    title: str
+    content: str
+    source_language: str = Field(default="en", min_length=2, max_length=16)
 
 
 class ExpressionExtractionItem(AppBaseModel):

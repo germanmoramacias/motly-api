@@ -6,5 +6,5 @@ from app.shared.schemas import AppBaseModel
 
 
 class PaginationParams(AppBaseModel):
-    limit: int = Field(default=20, ge=1, le=100)
+    limit: int = Field(default=1000, ge=1, le=5000)
     offset: int = Field(default=0, ge=0)
