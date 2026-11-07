@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.expressions.models import Expression
@@ -19,10 +19,21 @@ class ExpressionRepository:
         limit: int,
         offset: int,
         lesson_id: UUID | None = None,
+        q: str | None = None,
     ) -> list[Expression]:
         query = select(Expression).where(Expression.user_id == user_id)
         if lesson_id is not None:
             query = query.where(Expression.lesson_id == lesson_id)
+        if q and (search := q.strip()):
+            query = query.where(
+                or_(
+                    Expression.text.icontains(search, autoescape=True),
+                    Expression.meaning.icontains(search, autoescape=True),
+                    Expression.example.icontains(search, autoescape=True),
+                    Expression.keyword.icontains(search, autoescape=True),
+                    Expression.group.icontains(search, autoescape=True),
+                )
+            )
 
         result = await self.session.execute(
             query.order_by(Expression.created_at.desc()).limit(limit).offset(offset)

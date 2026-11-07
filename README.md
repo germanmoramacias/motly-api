@@ -115,6 +115,37 @@ The middleware validates the JWT against Supabase JWKS and exposes the claims in
 - `GET /api/v1/analytics/stats`
 - `POST /api/v1/analytics/quiz-results`
 
+## Vocabulary And Expressions Search
+
+Both list endpoints accept these optional query parameters:
+
+| Parameter | Behavior |
+| --- | --- |
+| `q` | Case-insensitive substring search, up to 200 characters. Leading/trailing whitespace is ignored; an empty or whitespace-only value disables search. |
+| `lesson_id` | Only return entries linked to this lesson (UUID). |
+| `limit` | Page size, from 1 to 5000 (default: 1000). |
+| `offset` | Number of matching entries to skip (default: 0). |
+
+Vocabulary search covers `term`, `definition`, and `example`. Expression search covers
+`text`, `meaning`, `example`, `keyword`, and `group`. A match in any field is sufficient.
+Search treats `%` and `_` as literal characters, not wildcards. It is not accent-insensitive
+or fuzzy search.
+
+```http
+GET /api/v1/vocabulary?q=horse&limit=50&offset=0
+GET /api/v1/expressions?q=warm%20up&limit=50&offset=0
+GET /api/v1/vocabulary?q=travel&lesson_id={lesson_id}&limit=50&offset=0
+```
+
+All filters apply before pagination and only return the authenticated user's entries.
+Responses remain JSON arrays ordered by creation date, newest first, without pagination metadata.
+
+## Tests
+
+```bash
+uv run python -m unittest discover -s tests -v
+```
+
 ## Alembic
 
 Create a migration:

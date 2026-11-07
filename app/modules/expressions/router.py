@@ -32,6 +32,7 @@ def get_expression_service(
 async def list_expressions(
     pagination: PaginationParams = Depends(),
     lesson_id: UUID | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=200, description="Case-insensitive text search"),
     user_id: UUID = Depends(get_current_db_user_id),
     service: ExpressionService = Depends(get_expression_service),
 ) -> list[ExpressionRead]:
@@ -40,6 +41,7 @@ async def list_expressions(
         limit=pagination.limit,
         offset=pagination.offset,
         lesson_id=lesson_id,
+        q=q,
     )
     return [ExpressionRead.model_validate(item) for item in items]
 

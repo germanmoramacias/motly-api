@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.vocabulary.models import Vocabulary
@@ -19,10 +19,19 @@ class VocabularyRepository:
         limit: int,
         offset: int,
         lesson_id: UUID | None = None,
+        q: str | None = None,
     ) -> list[Vocabulary]:
         query = select(Vocabulary).where(Vocabulary.user_id == user_id)
         if lesson_id is not None:
             query = query.where(Vocabulary.lesson_id == lesson_id)
+        if q and (search := q.strip()):
+            query = query.where(
+                or_(
+                    Vocabulary.term.icontains(search, autoescape=True),
+                    Vocabulary.definition.icontains(search, autoescape=True),
+                    Vocabulary.example.icontains(search, autoescape=True),
+                )
+            )
 
         result = await self.session.execute(
             query.order_by(Vocabulary.created_at.desc()).limit(limit).offset(offset)

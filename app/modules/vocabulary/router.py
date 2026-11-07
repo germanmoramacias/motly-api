@@ -32,6 +32,7 @@ def get_vocabulary_service(
 async def list_vocabulary(
     pagination: PaginationParams = Depends(),
     lesson_id: UUID | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=200, description="Case-insensitive text search"),
     user_id: UUID = Depends(get_current_db_user_id),
     service: VocabularyService = Depends(get_vocabulary_service),
 ) -> list[VocabularyRead]:
@@ -40,6 +41,7 @@ async def list_vocabulary(
         limit=pagination.limit,
         offset=pagination.offset,
         lesson_id=lesson_id,
+        q=q,
     )
     return [VocabularyRead.model_validate(item) for item in items]
 
