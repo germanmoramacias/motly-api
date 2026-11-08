@@ -7,6 +7,7 @@ from app.modules.notes.service import LessonService
 from app.modules.vocabulary.models import Vocabulary
 from app.modules.vocabulary.repository import VocabularyRepository
 from app.modules.vocabulary.schemas import VocabularyCreate, VocabularyUpdate
+from app.utils.pagination import VocabularySort
 
 
 class VocabularyService:
@@ -25,7 +26,8 @@ class VocabularyService:
         offset: int,
         lesson_id: UUID | None = None,
         q: str | None = None,
-    ) -> list[Vocabulary]:
+        sort: VocabularySort = "created_at_desc",
+    ) -> tuple[list[Vocabulary], int]:
         if lesson_id is not None:
             await self.lessons.get_lesson(lesson_id=lesson_id, user_id=user_id)
         return await self.repository.list_by_user(
@@ -34,6 +36,7 @@ class VocabularyService:
             offset=offset,
             lesson_id=lesson_id,
             q=q,
+            sort=sort,
         )
 
     async def get_item(self, item_id: UUID, user_id: UUID) -> Vocabulary:

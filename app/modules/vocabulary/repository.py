@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.vocabulary.models import Vocabulary
 from app.modules.vocabulary.schemas import VocabularyCreate, VocabularyUpdate
+from app.utils.pagination import VocabularySort
 
 
 class VocabularyRepository:
@@ -20,7 +21,8 @@ class VocabularyRepository:
         offset: int,
         lesson_id: UUID | None = None,
         q: str | None = None,
-    ) -> list[Vocabulary]:
+        sort: VocabularySort = "created_at_desc",
+    ) -> tuple[list[Vocabulary], int]:
         query = select(Vocabulary).where(Vocabulary.user_id == user_id)
         if lesson_id is not None:
             query = query.where(Vocabulary.lesson_id == lesson_id)
@@ -33,10 +35,17 @@ class VocabularyRepository:
                 )
             )
 
-        result = await self.session.execute(
-            query.order_by(Vocabulary.created_at.desc()).limit(limit).offset(offset)
-        )
-        return list(result.scalars().all())
+        total = await self.session.scalar(select(func.count()).select_from(query.subquery()))
+        if sort == "term_asc":
+            ordering = (func.lower(Vocabulary.term).asc(), Vocabulary.id.asc())
+        elif sort == "term_desc":
+            ordering = (func.lower(Vocabulary.term).desc(), Vocabulary.id.desc())
+        elif sort == "created_at_asc":
+            ordering = (Vocabulary.created_at.asc(), Vocabulary.id.asc())
+        else:
+            ordering = (Vocabulary.created_at.desc(), Vocabulary.id.desc())
+        result = await self.session.execute(query.order_by(*ordering).limit(limit).offset(offset))
+        return list(result.scalars().all()), total or 0
 
     async def get_for_user(self, item_id: UUID, user_id: UUID) -> Vocabulary | None:
         result = await self.session.execute(

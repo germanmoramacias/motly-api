@@ -15,8 +15,8 @@ from app.modules.vocabulary.schemas import (
     VocabularyUpdate,
 )
 from app.modules.vocabulary.service import VocabularyService
-from app.shared.schemas import MessageResponse
-from app.utils.pagination import PaginationParams
+from app.shared.schemas import MessageResponse, PaginatedResponse
+from app.utils.pagination import PaginationParams, VocabularySort
 
 router = APIRouter()
 
@@ -28,22 +28,29 @@ def get_vocabulary_service(
     return VocabularyService(VocabularyRepository(session), lessons)
 
 
-@router.get("", response_model=list[VocabularyRead])
+@router.get("", response_model=PaginatedResponse[VocabularyRead])
 async def list_vocabulary(
     pagination: PaginationParams = Depends(),
     lesson_id: UUID | None = Query(default=None),
     q: str | None = Query(default=None, max_length=200, description="Case-insensitive text search"),
+    sort: VocabularySort = Query(default="created_at_desc"),
     user_id: UUID = Depends(get_current_db_user_id),
     service: VocabularyService = Depends(get_vocabulary_service),
-) -> list[VocabularyRead]:
-    items = await service.list_for_user(
+) -> PaginatedResponse[VocabularyRead]:
+    items, total = await service.list_for_user(
         user_id=user_id,
         limit=pagination.limit,
         offset=pagination.offset,
         lesson_id=lesson_id,
         q=q,
+        sort=sort,
     )
-    return [VocabularyRead.model_validate(item) for item in items]
+    return PaginatedResponse[VocabularyRead](
+        items=[VocabularyRead.model_validate(item) for item in items],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.post("", response_model=VocabularyRead, status_code=status.HTTP_201_CREATED)

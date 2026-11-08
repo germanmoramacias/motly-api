@@ -7,6 +7,7 @@ from app.modules.expressions.models import Expression
 from app.modules.expressions.repository import ExpressionRepository
 from app.modules.expressions.schemas import ExpressionCreate, ExpressionUpdate
 from app.modules.notes.service import LessonService
+from app.utils.pagination import ExpressionSort
 
 
 class ExpressionService:
@@ -25,7 +26,8 @@ class ExpressionService:
         offset: int,
         lesson_id: UUID | None = None,
         q: str | None = None,
-    ) -> list[Expression]:
+        sort: ExpressionSort = "created_at_desc",
+    ) -> tuple[list[Expression], int]:
         if lesson_id is not None:
             await self.lessons.get_lesson(lesson_id=lesson_id, user_id=user_id)
         return await self.repository.list_by_user(
@@ -34,6 +36,7 @@ class ExpressionService:
             offset=offset,
             lesson_id=lesson_id,
             q=q,
+            sort=sort,
         )
 
     async def get_item(self, item_id: UUID, user_id: UUID) -> Expression:

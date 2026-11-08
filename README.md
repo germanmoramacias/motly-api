@@ -125,6 +125,7 @@ Both list endpoints accept these optional query parameters:
 | `lesson_id` | Only return entries linked to this lesson (UUID). |
 | `limit` | Page size, from 1 to 5000 (default: 1000). |
 | `offset` | Number of matching entries to skip (default: 0). |
+| `sort` | `created_at_desc` (default, newest first) or `created_at_asc` (oldest first); `term_asc`/`term_desc` for vocabulary; `text_asc`/`text_desc` for expressions. |
 
 Vocabulary search covers `term`, `definition`, and `example`. Expression search covers
 `text`, `meaning`, `example`, `keyword`, and `group`. A match in any field is sufficient.
@@ -132,13 +133,33 @@ Search treats `%` and `_` as literal characters, not wildcards. It is not accent
 or fuzzy search.
 
 ```http
-GET /api/v1/vocabulary?q=horse&limit=50&offset=0
-GET /api/v1/expressions?q=warm%20up&limit=50&offset=0
+GET /api/v1/vocabulary?q=horse&limit=50&offset=0&sort=created_at_desc
+GET /api/v1/expressions?q=warm%20up&limit=50&offset=0&sort=created_at_asc
+GET /api/v1/vocabulary?limit=50&offset=0&sort=term_asc
+GET /api/v1/expressions?limit=50&offset=0&sort=text_desc
 GET /api/v1/vocabulary?q=travel&lesson_id={lesson_id}&limit=50&offset=0
 ```
 
-All filters apply before pagination and only return the authenticated user's entries.
-Responses remain JSON arrays ordered by creation date, newest first, without pagination metadata.
+All filters and ordering apply before pagination and only return the authenticated user's entries.
+Alphabetical ordering is case-insensitive and uses the ID as a deterministic tie-breaker.
+Both endpoints now return an object instead of the previous bare array. Clients must read entries
+from `response.items`:
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "total_pages": 0,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+`total` counts all matching entries before pagination, including the `q` and `lesson_id` filters.
+`total_pages` is `ceil(total / limit)`, or 0 for no matches. An offset beyond the last result returns
+empty `items` but preserves the matching total and page count. Entries with identical `created_at`
+values are sorted by ID in the same direction to keep ordering deterministic.
+No `X-Total-Count` header is returned. Other list endpoints keep their existing response format.
 
 ## Tests
 

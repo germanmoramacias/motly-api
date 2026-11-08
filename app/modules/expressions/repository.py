@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.expressions.models import Expression
 from app.modules.expressions.schemas import ExpressionCreate, ExpressionUpdate
+from app.utils.pagination import ExpressionSort
 
 
 class ExpressionRepository:
@@ -20,7 +21,8 @@ class ExpressionRepository:
         offset: int,
         lesson_id: UUID | None = None,
         q: str | None = None,
-    ) -> list[Expression]:
+        sort: ExpressionSort = "created_at_desc",
+    ) -> tuple[list[Expression], int]:
         query = select(Expression).where(Expression.user_id == user_id)
         if lesson_id is not None:
             query = query.where(Expression.lesson_id == lesson_id)
@@ -35,10 +37,17 @@ class ExpressionRepository:
                 )
             )
 
-        result = await self.session.execute(
-            query.order_by(Expression.created_at.desc()).limit(limit).offset(offset)
-        )
-        return list(result.scalars().all())
+        total = await self.session.scalar(select(func.count()).select_from(query.subquery()))
+        if sort == "text_asc":
+            ordering = (func.lower(Expression.text).asc(), Expression.id.asc())
+        elif sort == "text_desc":
+            ordering = (func.lower(Expression.text).desc(), Expression.id.desc())
+        elif sort == "created_at_asc":
+            ordering = (Expression.created_at.asc(), Expression.id.asc())
+        else:
+            ordering = (Expression.created_at.desc(), Expression.id.desc())
+        result = await self.session.execute(query.order_by(*ordering).limit(limit).offset(offset))
+        return list(result.scalars().all()), total or 0
 
     async def get_for_user(self, item_id: UUID, user_id: UUID) -> Expression | None:
         result = await self.session.execute(

@@ -15,8 +15,8 @@ from app.modules.expressions.schemas import (
 from app.modules.expressions.service import ExpressionService
 from app.modules.notes.router import get_current_db_user_id, get_lesson_service
 from app.modules.notes.service import LessonService
-from app.shared.schemas import MessageResponse
-from app.utils.pagination import PaginationParams
+from app.shared.schemas import MessageResponse, PaginatedResponse
+from app.utils.pagination import ExpressionSort, PaginationParams
 
 router = APIRouter()
 
@@ -28,22 +28,29 @@ def get_expression_service(
     return ExpressionService(ExpressionRepository(session), lessons)
 
 
-@router.get("", response_model=list[ExpressionRead])
+@router.get("", response_model=PaginatedResponse[ExpressionRead])
 async def list_expressions(
     pagination: PaginationParams = Depends(),
     lesson_id: UUID | None = Query(default=None),
     q: str | None = Query(default=None, max_length=200, description="Case-insensitive text search"),
+    sort: ExpressionSort = Query(default="created_at_desc"),
     user_id: UUID = Depends(get_current_db_user_id),
     service: ExpressionService = Depends(get_expression_service),
-) -> list[ExpressionRead]:
-    items = await service.list_for_user(
+) -> PaginatedResponse[ExpressionRead]:
+    items, total = await service.list_for_user(
         user_id=user_id,
         limit=pagination.limit,
         offset=pagination.offset,
         lesson_id=lesson_id,
         q=q,
+        sort=sort,
     )
-    return [ExpressionRead.model_validate(item) for item in items]
+    return PaginatedResponse[ExpressionRead](
+        items=[ExpressionRead.model_validate(item) for item in items],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.post("", response_model=ExpressionRead, status_code=status.HTTP_201_CREATED)
