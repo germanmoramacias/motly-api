@@ -5,12 +5,20 @@ on:
     branches:
       - main
 
+concurrency:
+  group: motly-api-production
+  cancel-in-progress: false
+
 permissions:
   contents: read
   packages: write
 
 jobs:
+  verify:
+    uses: ./.github/workflows/test.yml
+
   build:
+    needs: verify
     runs-on: ubuntu-24.04-arm
 
     steps:
@@ -33,7 +41,10 @@ jobs:
           context: .
           platforms: linux/arm64
           push: true
-          tags: ghcr.io/germanmoramacias/motly-api:latest
+          tags: |
+            ghcr.io/germanmoramacias/motly-api:latest
+            ghcr.io/germanmoramacias/motly-api:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -58,16 +69,8 @@ jobs:
           git fetch origin
           git reset --hard origin/main
 
-      - name: Pull new image
+      - name: Deploy with backup and recovery checkpoint
         working-directory: /home/german/server/apps/motly-api
-        run: |
-          docker compose -f compose.prod.yml pull
-
-      - name: Deploy
-        working-directory: /home/german/server/apps/motly-api
-        run: |
-          docker compose -f compose.prod.yml up -d
-
-      - name: Clean old images
-        run: |
-          docker image prune -f
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: bash scripts/deploy.sh "$RELEASE_SHA"

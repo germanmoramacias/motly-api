@@ -15,6 +15,9 @@ class QuizResultCreate(AppBaseModel):
 
 
 class QuizResultRead(EntitySchema):
+    quiz_session_id: UUID | None
+    correct_count: int | None
+    score_percent: float | None
     user_id: UUID
     lesson_id: UUID | None
     score: int

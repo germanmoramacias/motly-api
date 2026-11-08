@@ -10,3 +10,5 @@ dist/
 build/
 .idea/
 .vscode/
+# Private deployment checkpoints and data backups
+.deploy/

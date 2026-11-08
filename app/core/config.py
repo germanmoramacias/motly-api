@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
 
+    quiz_max_questions: int = Field(default=15, ge=1, le=15)
+    quiz_context_chars: int = Field(default=24000, ge=2000, le=60000)
+    quiz_generation_timeout_seconds: int = Field(default=90, ge=10, le=300)
+    quiz_generation_max_attempts: int = Field(default=2, ge=1, le=5)
+    quiz_worker_poll_seconds: float = Field(default=2, ge=0.5, le=60)
+
     backend_cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
 

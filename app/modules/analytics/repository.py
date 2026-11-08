@@ -58,7 +58,7 @@ class AnalyticsRepository:
 
     async def quiz_summary(self, user_id: UUID) -> tuple[int, float | None]:
         result = await self.session.execute(
-            select(func.count(QuizResult.id), func.avg(QuizResult.score))
+            select(func.count(QuizResult.id), func.avg(QuizResult.score_percent))
             .select_from(QuizResult)
             .where(QuizResult.user_id == user_id)
         )

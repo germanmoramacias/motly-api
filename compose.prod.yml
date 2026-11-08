@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/germanmoramacias/motly-api:latest
+    image: ${MOTLY_API_IMAGE:-ghcr.io/germanmoramacias/motly-api:latest}
     container_name: motly-api
     restart: unless-stopped
     env_file:
@@ -10,6 +10,14 @@ services:
     networks:
       - default
       - homelab
+
+  quiz-worker:
+    image: ${MOTLY_API_IMAGE:-ghcr.io/germanmoramacias/motly-api:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: python -m app.modules.quiz.worker
+    stop_grace_period: 120s
 
 networks:
   homelab:

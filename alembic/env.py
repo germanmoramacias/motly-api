@@ -14,6 +14,7 @@ from app.modules.analytics.models import QuizResult
 from app.modules.expressions.models import Expression
 from app.modules.grammar.models import GrammarTopic
 from app.modules.notes.models import Lesson
+from app.modules.quiz.models import QuizAnswer, QuizGenerationJob, QuizQuestion, QuizSession
 from app.modules.users.models import User
 from app.modules.vocabulary.models import Vocabulary
 
@@ -61,4 +62,8 @@ async def run_async_migrations() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_async_migrations())
+    provided_connection = config.attributes.get("connection")
+    if provided_connection is not None:
+        do_run_migrations(provided_connection)
+    else:
+        asyncio.run(run_async_migrations())

@@ -109,11 +109,17 @@ The middleware validates the JWT against Supabase JWKS and exposes the claims in
 - `GET /api/v1/expressions`
 - `POST /api/v1/expressions`
 - `GET /api/v1/expressions?lesson_id={lesson_id}`
-- `POST /api/v1/quiz/generate`
+- `POST /api/v1/quiz/sessions` (requires `Idempotency-Key`)
+- `GET /api/v1/quiz/sessions/active`
+- `GET /api/v1/quiz/sessions/{id}`
+- `POST /api/v1/quiz/sessions/{id}/answers`
+- `POST /api/v1/quiz/sessions/{id}/retry`
+- `GET /api/v1/quiz/sessions?status=completed`
+- `GET /api/v1/quiz/sources/lessons?q=...&limit=20&offset=0`
 - `POST /api/v1/writing/submissions`
 - `POST /api/v1/ai/chat`
 - `GET /api/v1/analytics/stats`
-- `POST /api/v1/analytics/quiz-results`
+- `GET /api/v1/analytics/quiz-results` (read-only; new scores are server-derived)
 
 ## Vocabulary And Expressions Search
 
@@ -189,3 +195,50 @@ alembic upgrade head
 - Configuration is centralized in `app/core/config.py`.
 - Global errors live in `app/core/errors.py`.
 - The OpenAI integration lives in `app/modules/ai/service.py`.
+
+## Persistent quizzes
+
+Apply `alembic upgrade head` before deploying the updated API and worker. For Supabase,
+use the existing PostgreSQL database connection. The migration creates four tables,
+adds nullable fields to legacy results, and enables RLS on the new tables with no
+client policies. API/worker database credentials must have backend access (table owner
+or an appropriate server-only role). Never grant frontend roles access to answer keys.
+No existing study material or legacy scores are rewritten.
+
+Run `python -m app.modules.quiz.worker` alongside uvicorn, or start the `quiz-worker`
+service in either Compose configuration. Deploy both processes from the same version.
+The worker uses PostgreSQL row locks and expiring job leases, without Redis or pgmq.
+It does not hold database locks while calling the model. A terminated worker's job
+can be reclaimed; fencing tokens prevent late publication by its previous owner.
+Generation may call the provider again after interruption; publication is idempotent.
+
+Create with `{"scope":"all"}` or `{"scope":"lesson","lesson_id":"UUID"}`.
+The same idempotency key and payload return the original session, even after completion.
+A different request while a quiz is pending returns `409 ACTIVE_QUIZ_EXISTS`.
+Only the current question and already submitted answers are exposed. Answer with
+`{"question_id":"UUID","selected_option_id":"UUID"}`. Replaying the same answer is
+safe; changing a submitted answer returns 409. The last answer atomically completes
+the session and writes its verified analytics summary. There is no client completion
+or score-submission endpoint. `score` on new legacy-compatible summaries is the count
+of correct answers; `score_percent` is the normalized percentage. Analytics averages
+verified percentages and excludes legacy entries whose score scale is unknown.
+
+All scope uses a bounded diverse sample of the user's saved material, including
+unlinked WordLab/grammar entries, rotating away from recently used sources. It does
+not test every item in every quiz. Snapshots remove HTML, scripts and embedded images;
+image-only notes are not supported. Model output is schema-validated and checked for
+unknown sources, duplicate questions and invalid options before publication.
+The model picks 1–15 questions (configurable upper bound); no client count is accepted.
+
+The old stateless `/quiz/generate` and client-write `/analytics/quiz-results` routes
+are removed. Frontend clients must migrate together. Local demo history is not imported.
+
+Quiz tests run on an isolated SQLite database by default (`pip install -e ".[dev]"`).
+Set `QUIZ_TEST_DATABASE_URL` to a disposable PostgreSQL database to additionally test
+row-lock concurrency. Each test creates and drops its own randomly named schema.
+The test workflow runs migrations and the full suite against PostgreSQL 16.
+
+Production activation and rollback procedures are in [docs/quiz-operations.md](docs/quiz-operations.md).
+The 0005 downgrade archives quiz data privately rather than deleting it; upgrading
+again restores it. Deployment retains the previous image and a private application-data
+backup, with a code-only rollback as the default recovery path.
