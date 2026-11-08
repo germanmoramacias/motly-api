@@ -1,0 +1,36 @@
+name: Quiz recovery checkpoint
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Capture the pre-quizzes image without changing running services
+        type: choice
+        required: true
+        default: capture-baseline
+        options: [capture-baseline]
+permissions:
+  contents: read
+concurrency:
+  group: motly-api-production
+  cancel-in-progress: false
+jobs:
+  checkpoint:
+    runs-on: [self-hosted, Linux, ARM64]
+    steps:
+      - name: Update operational scripts and pin baseline
+        working-directory: /home/german/server/apps/motly-api
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git merge --ff-only origin/main
+          umask 077
+          mkdir -p .deploy
+          if [[ ! -s .deploy/before-quizzes-image ]]; then
+            baseline="$(docker image ls --format '{{.Repository}}:{{.Tag}}' | LC_ALL=C sort | grep -E '^ghcr.io/germanmoramacias/motly-api:rollback-[0-9]{8}T[0-9]{6}Z$' | head -n 1)"
+            [[ -n "$baseline" ]] || { echo "No preserved pre-quizzes image found" >&2; exit 1; }
+            printf '%s\n' "$baseline" > .deploy/before-quizzes-image
+          fi
+          image="$(cat .deploy/before-quizzes-image)"
+          docker image inspect "$image" --format 'Baseline image is present: {{.Id}}'
+          printf 'Pre-quizzes recovery image: %s\n' "$image"
+          docker compose -f compose.prod.yml ps

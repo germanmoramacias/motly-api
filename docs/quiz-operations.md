@@ -22,7 +22,7 @@ The web workflow similarly records the previous frontend image and checks `/logi
 On the web server, in `/home/german/server/apps/motly-web`:
 
 ```bash
-bash scripts/rollback.sh
+bash scripts/rollback.sh --before-quizzes
 ```
 
 Then on the API server, in `/home/german/server/apps/motly-api`:
@@ -59,3 +59,10 @@ answers, job, verified result and an unrelated legacy result on PostgreSQL.
 Never use `alembic stamp` as a substitute for applying/reversing these changes. Stop
 API and worker before a manual schema downgrade. Keep the migration code from the
 new release available until rollback/recovery has completed.
+
+The pre-quizzes baseline is pinned separately in `.deploy/before-quizzes-image`.
+It is never overwritten by later visual fixes. `.deploy/previous-image` remains the
+immediately preceding release for ordinary code-only recovery. The manual GitHub
+workflow **Quiz recovery checkpoint** captures/verifies the original baseline without
+changing any running container. Use `--before-quizzes` on the web before a database
+downgrade; the API `--database` mode selects its corresponding original baseline.

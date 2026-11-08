@@ -13,6 +13,10 @@ if [[ -n "$previous" ]]; then
   rollback_tag="ghcr.io/germanmoramacias/motly-api:rollback-$(date -u +%Y%m%dT%H%M%SZ)"
   docker tag "$previous" "$rollback_tag"
   printf '%s\n' "$rollback_tag" > .deploy/previous-image
+  if [[ ! -s .deploy/before-quizzes-image ]]; then
+    baseline="$(docker image ls --format '{{.Repository}}:{{.Tag}}' | LC_ALL=C sort | grep -E '^ghcr.io/germanmoramacias/motly-api:rollback-[0-9]{8}T[0-9]{6}Z$' | head -n 1)"
+    printf '%s\n' "${baseline:-$rollback_tag}" > .deploy/before-quizzes-image
+  fi
 fi
 printf '%s\n' "$MOTLY_API_IMAGE" > .deploy/current-image
 docker compose -f compose.prod.yml pull
